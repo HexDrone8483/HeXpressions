@@ -52,6 +52,45 @@ void set_by_matrix(int matrix[ROW_SIZE][COL_SIZE], CRGB active_color) {
   }
 }
 
+void scroll_matrix(void* pMtx, CRGB active_color, int colSize, long dly, bool loop) {
+  int (*matrix)[colSize] = (int (*)[colSize]) pMtx;
+  int colOffset = 0;
+  int currWindow[ROW_SIZE][COL_SIZE];
+  int currRow;
+  int currLogicalCol, currPhysicalCol;
+
+  
+  if (loop) {
+    while (loop) {
+      for (colOffset = 0; colOffset < colSize; colOffset++) { 
+        for (currRow = 0; currRow < ROW_SIZE; currRow++) {
+          for (currLogicalCol = 0; currLogicalCol < COL_SIZE; currLogicalCol++) {
+            currPhysicalCol = currLogicalCol + colOffset;
+            if (currPhysicalCol > colSize) {
+              currPhysicalCol-= colSize; // Wraps window around to start of scrolling range
+            }
+            currWindow[currRow][currLogicalCol] = matrix[currRow][currPhysicalCol];
+          }
+        }
+        show_pattern(currWindow, active_color);
+        delay(dly);
+      }
+    }
+  } else {
+    // Scan starting at column 0. Stops once last frame is fully visible.
+    for (colOffset = 0; colOffset < (colSize - ROW_SIZE); colOffset++) { 
+      for (currRow = 0; currRow < ROW_SIZE; currRow++) {
+        for (currLogicalCol = 0; currLogicalCol < COL_SIZE; currLogicalCol++) {
+          currPhysicalCol = currLogicalCol + colOffset;
+          currWindow[currRow][currLogicalCol] = matrix[currRow][currPhysicalCol];
+        }
+      }
+      show_pattern(currWindow, active_color);
+      delay(dly);
+    }
+  }
+}
+
 /* Takes a 2D matrix pattern and a single colour, and 
  *  displays it on the connected LED display. 
  * 
@@ -106,5 +145,5 @@ void show_spiral() {
  *  visor is powered on. 
  */
 void loop() {
-  show_ID();
+  scroll_matrix(&mtx_scrollable, HexCol, 48, 100, true);
 }
